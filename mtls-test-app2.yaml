@@ -1,0 +1,9 @@
+apps:
+  labels:
+    app: mtls-test-app2
+    version: v1
+
+service:
+  labels:
+    app: mtls-test-app2
+    service: mtls-test-app2

@@ -1,0 +1,149 @@
+{{- if .Values.apps }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+    {{- if .Values.apps.labels }}
+    {{- toYaml .Values.apps.labels | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.configMaps }}
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    {{- end }}
+    {{- if .Values.secrets }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+    {{- end }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
+      {{- if .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- if .Values.securityContext }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+        {{- with .Values.apps }}
+          image: "{{ .image.repository }}:{{ .image.tag }}"
+          imagePullPolicy: {{ .image.pullPolicy }}
+          ports:
+            {{- toYaml .ports | nindent 12 }}
+          {{- if .livenessProbe }}
+          livenessProbe:
+            {{- toYaml .livenessProbe | nindent 12}}
+          {{- end }}
+          {{- if .readinessProbe }}
+          readinessProbe: 
+            {{- toYaml .readinessProbe | nindent 12}}
+          {{- end }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          {{- if .env }}
+          {{- with .env }}
+          env:
+{{ toYaml . | indent 10 }}
+          {{- end }}
+          {{- end }}
+          {{- if .envFrom }}
+          {{- with .envFrom }}
+          envFrom:
+{{ toYaml . | indent 10 }}
+          {{- end }}
+          {{- end }}
+
+          {{- if or (.persistence.enabled) ($.Values.configMaps) ($.Values.secrets) }}
+          volumeMounts:
+          {{- if .persistence.enabled }}
+          # Persistent volumes
+          {{- range .persistence.volumes }}
+            - name: {{ .name }}
+              mountPath: {{ .path }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+        {{- end }}
+          {{- if .Values.configMaps }}
+          # ConfigMaps
+          {{- range .Values.configMaps }}
+            - name: {{ .name }}
+              mountPath: {{ .path }}
+              {{- if .subpath }}
+              subPath: {{ .subpath }}
+              {{- end }}
+              readOnly: {{ .readOnly | default true }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secrets }}
+          # Secrets
+          {{- range .Values.secrets }}
+            - name: {{ .name }}
+              mountPath: {{ .path }}
+              {{- if .subpath }}
+              subPath: {{ .subpath }}
+              {{- end }}
+              readOnly: {{ .readOnly | default true }}
+          {{- end }}
+          {{- end }}
+      {{- if or (.Values.apps.persistence.enabled) (.Values.configMaps) (.Values.secrets) }}
+      volumes:
+      {{- if .Values.apps.persistence.enabled }}
+      # Persistent volumes
+      {{- range .Values.app.persistence.volumes }}
+      - name: {{ .name }}
+        persistentVolumeClaim:
+          claimName: {{ .name }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.configMaps }}
+      # ConfigMaps
+      {{- range .Values.configMaps }}
+      - name: {{ .name }}
+        configMap:
+          name: {{ .name }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.secrets }}
+      # Secrets
+      {{- range .Values.secrets }}
+      - name: {{ .name }}
+        secret:
+          secretName: {{ .name }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

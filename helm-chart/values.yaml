@@ -1,0 +1,76 @@
+replicaCount: 1
+
+apps:
+  image:
+    repository: 384840310136.dkr.ecr.us-east-1.amazonaws.com/aberdyugin-registry
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+  livenessProbe:
+    httpGet:
+      path: /status.html
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 3
+  readinessProbe:
+    httpGet:
+      path: /status.html
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 3
+  env: {}
+  resources: 
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  ports:
+    - name: http
+      containerPort: 8080
+  persistence:
+    enabled: false
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+configMaps: []
+secrets: []
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+
+autoscaling:
+  enabled: false
+
+#hpa:
+#  enabled: false
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+destinationRule:
+  enabled: true
+
+virtualService:
+  enabled: true
+  gateway: mtld-gateway
