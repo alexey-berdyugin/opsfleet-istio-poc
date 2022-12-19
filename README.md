@@ -55,6 +55,53 @@ helm install mtls-test-app1 ./helm-chart -f ./mtls-test.app1.yaml -n mtls-enforc
 helm install mtls-test-app2 ./helm-chart -f ./mtls-test.app2.yaml -n mtls-enforced
 helm install non-mtls-test-app ./helm-chart
 ```
+#### List of deployed resources in mtld-enforced namespace
+<details>
+<summary>Press to expand</summary>
+
+```
+km get all -l app.kubernetes.io/instance=mtls-test-app1
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/mtls-test-app1-58ddb47c98-2nfrp   2/2     Running   0          13h
+
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/mtls-test-app1   ClusterIP   10.100.14.119   <none>        8080/TCP   15h
+
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mtls-test-app1   1/1     1            1           15h
+
+NAME                                        DESIRED   CURRENT   READY   AGE
+replicaset.apps/mtls-test-app1-58ddb47c98   1         1         1       15h
+--------
+km get all -l app.kubernetes.io/instance=mtls-test-app2
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/mtls-test-app2-645df5967f-4mdnm   2/2     Running   0          13h
+
+NAME                     TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/mtls-test-app2   ClusterIP   10.100.103.0   <none>        8080/TCP   15h
+
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mtls-test-app2   1/1     1            1           15h
+
+NAME                                        DESIRED   CURRENT   READY   AGE
+replicaset.apps/mtls-test-app2-645df5967f   1         1         1       15h
+--------
+km get gateway
+NAME           AGE
+mtld-gateway   24m
+--------
+km get DestinationRule
+NAME             HOST             AGE
+mtls-test-app1   mtls-test-app1   56m
+mtls-test-app2   mtls-test-app2   57m
+--------
+km get VirtualService
+NAME             GATEWAYS           HOSTS                AGE
+mtls-test-app1   ["mtld-gateway"]   ["mtls-test-app1"]   57m
+mtls-test-app2   ["mtld-gateway"]   ["mtls-test-app2"]   58m
+```
+
+</details>
 
 ### 4. Verification of connections between deployed test applications
 We deployed 2 test applications in mtls-enforced namespace and one in default non-mTLS namespace.
@@ -104,4 +151,4 @@ km exec $(km get po -l app.kubernetes.io/instance=mtls-test-app2 -o json | jq -r
 This static HTML file is served by Nginx
 ```
 
-POC completed.
+**POC completed**
